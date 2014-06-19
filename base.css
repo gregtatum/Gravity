@@ -1,0 +1,130 @@
+body {
+	font-family: 'Roboto', sans-serif;
+	background-color: #f0f0f0;
+	margin: 0px;
+	overflow: hidden;
+}
+*, *:before, *:after {
+	-moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
+}
+canvas {
+	width:100%;
+	height:100%;
+	/*cursor: pointer;*/
+}
+h1 {
+	font-weight: 800;
+	font-size: 4.3em;
+	color: #4A9DE7;
+	text-transform:uppercase;
+	margin:0;
+	line-height: 1;
+	font-weight: 100;
+}
+.info {
+	position: absolute;
+	bottom: 1em;
+	right: 1em;	
+}
+p {
+    margin: 0;
+    font-weight: 400;
+    text-transform: uppercase;
+    color: #999;
+    letter-spacing: 0.25em;
+}
+.credits {
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+    font-size: 0.7em;
+    color: #777;
+}
+a {
+    color: #4A9DE7;
+}
+a:hover {
+    color: #007BE9;
+    text-decoration: none;
+}
+@media screen and (min-width:1200px) {
+	.info {
+		font-size:1.3em;
+	}
+}
+
+@media screen and (max-width: 600px) {
+	.info {
+		font-size:0.6em;
+		width:100%;
+		text-align:center;
+		right:0;
+	}
+	.credits {
+		right:0;
+		text-align:center;
+	}
+}
+
+.info {
+	padding: 0 2em;
+	text-align:center;
+}
+.arrow-prev:after, .arrow-next:after {
+    content:"";
+    width: 0px;
+    height: 0px;
+    border-style: solid;
+    position: absolute;
+    top: 50%;
+    margin-top: -1em;
+}
+.arrow-prev:after {
+	left: 0;
+    border-width: 0.7em 1em 0.7em 0;
+    border-color: transparent rgba(0, 123, 255, 0.67) transparent transparent;
+}
+.arrow-next:after {
+    right: 0;
+    border-width: 0.7em 0 0.7em 1em;
+    border-color: transparent transparent transparent rgba(0, 123, 255, 0.67);
+}
+.arrow-prev, .arrow-next {
+    position: absolute;
+    top: 0;
+    display: block;
+    width: 2em;
+    height: 100%;
+    overflow: hidden;
+    text-indent: 100px;
+}
+.arrow-prev {
+    left: 0;
+}
+.arrow-next {
+    right: 0;
+}
+.message {
+	position: absolute;
+	top: 50%;
+	left: 0;
+	width: 100%;
+	margin-top: -0.5em;
+	font-size: 1.7em;
+	text-align: center;
+	text-transform: uppercase;
+	color: rgba(74, 157, 231, 0.65);
+	padding: 0 6%;
+	pointer-events:none;
+}
+@media screen and (max-width: 600px) {
+
+	.arrow-prev:after {
+	    right: 0;
+		left: auto;
+	}
+	.arrow-next:after {
+	    left: 0;
+		right: auto;
+	}	
+}

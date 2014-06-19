@@ -1,4 +1,4 @@
-var Gravity = function() {
+var Gravity = function( max ) {
 	
 	this.$window = $(window);
 	
@@ -26,7 +26,7 @@ var Gravity = function() {
 	this.s = 0.5;
 	this.l = 0.66;
 	
-	this.color = new THREE.Color().setHSL();
+	this.color = new THREE.Color();
 	
 	this.screenLength = Math.sqrt( this.game.width * this.game.width + this.game.height * this.game.height );
 	
@@ -34,8 +34,8 @@ var Gravity = function() {
 	this.fireTheta = Math.PI * 1.7;
 	this.fireStrength = this.screenLength / 17;
 	
-	this.maxFire = 2000;
-	this.fireRate = 12;
+	this.maxFire = max;
+	this.fireRate = 24000 / this.maxFire;
 	this.nextFire = 0;
 	
 	this.collisionGroups = null;
@@ -48,11 +48,17 @@ Gravity.prototype = {
 	preload : function() {
 		
 		this.game.load.image('arrow', 'images/arrow.png');
+		this.game.load.image('black-hole', 'images/black-hole.png');
 		
 	},
 	
 	create : function() {
 		this.game.stage.backgroundColor = '#404040';
+		this.blackHole = this.game.add.sprite(100, 100, 'black-hole');
+		this.blackHole.anchor.setTo(0.5, 0.5);
+		this.blackHole.x = this.game.width / 2;
+		this.blackHole.y = this.game.height / 2;
+		
 		this.createPhysics();
 		this.createBullets();
 	},
@@ -125,8 +131,10 @@ Gravity.prototype = {
 				3 * this.game.height / 4
 			);
 			
-			bullet.body.moveRight(	this.fireStrength * Math.cos( this.fireTheta ) + Math.random() * 1 );
-			bullet.body.moveUp(		this.fireStrength * Math.sin( this.fireTheta ) + Math.random() * 1 );
+			bullet.body.moveRight(	this.fireStrength * Math.cos( this.fireTheta ) );
+			bullet.body.moveUp(		this.fireStrength * Math.sin( this.fireTheta ) );
+			//bullet.body.moveRight(	this.fireStrength * Math.cos( this.fireTheta ) + Math.random() * 1 );
+			//bullet.body.moveUp(		this.fireStrength * Math.sin( this.fireTheta ) + Math.random() * 1 );
 			this.h += .01;
 			
 			this.fireTheta += Math.PI / 1000;
@@ -216,5 +224,26 @@ Gravity.prototype = {
 var gravity;
 
 $(function() {
-	gravity = new Gravity();
+	
+	
+	function begin( speed ) {
+		gravity = new Gravity( speed );
+		$('.message').hide();
+	}
+	
+	$('#slow').click(function() {
+		begin( 200 );
+		return false;
+	});
+	
+	$('#medium').click(function() {
+		begin( 750 );
+		return false;
+	});
+	
+	$('#fast').click(function() {
+		begin( 2000 );
+		return false;
+	});
+	
 });

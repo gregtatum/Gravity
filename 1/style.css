@@ -4,3 +4,6 @@
 h1 {
 	font-size: 4.7em;
 }
+.message {
+	pointer-events: all;
+}

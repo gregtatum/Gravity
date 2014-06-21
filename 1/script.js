@@ -1,11 +1,24 @@
 var Gravity = function( max ) {
 	
+	var transparent,
+		renderType;
+	
+	if( this.webglAvailable() ) {
+		transparent = false;
+		renderType = Phaser.WEBGL;
+	} else {
+		transparent = true;
+		renderType = Phaser.CANVAS;
+	}
+
 	this.$window = $(window);
+	this.width = this.$window.width();
+	this.height = this.$window.height();
 	
 	this.game = new Phaser.Game(
-		this.$window.width(),	//Canvas Size
-		this.$window.height(),	//Canvas Size
-		Phaser.AUTO,			//Renderer
+		this.width,	//Canvas Size
+		this.height,	//Canvas Size
+		renderType,				//Renderer
 		'container',			//DOM ID
 		{
 			preload: this.preload.bind(this),
@@ -13,7 +26,7 @@ var Gravity = function( max ) {
 			update: this.update.bind(this),
 			render: this.render.bind(this)
 		},
-		false,			//transparent
+		transparent,	//transparent
 		false			//antialias
 	);
 	
@@ -82,7 +95,7 @@ Gravity.prototype = {
 	
 	createBullets : function() {
 		
-		this.bullets = this.game.add.group();
+		this.bullets = this.game.add.spriteBatch();
 		this.bullets.enableBody = true;
 		this.bullets.physicsBodyType = Phaser.Physics.P2JS;
 		this.bullets.enableBodyDebug = true;
@@ -105,6 +118,7 @@ Gravity.prototype = {
 			bullet.body.collides([]);
 			bullet.scale.x = 0.3;
 			bullet.scale.y = 0.3;
+			
 			bullet.blendMode = PIXI.blendModes.ADD;
 		}		
 		
@@ -112,7 +126,7 @@ Gravity.prototype = {
 	
 	fire : function() {
 		
-		var bullet;
+		var bullet, random;
 
 		if( this.game.time.now > this.nextFire && this.bullets.countDead() > 0) {
 			
@@ -173,9 +187,10 @@ Gravity.prototype = {
 	attractGravity : function() {
 		var i = this.bullets.children.length,
 			denominator,
-			gravity = 30000,
+//			gravity = 30000,
+			gravity = this.width * this.height / 30,
 			speed;
-		
+
 		while(i--) {
 			
 			bullet = this.bullets.children[i];
@@ -219,12 +234,21 @@ Gravity.prototype = {
 		$("#container").append( this.stats.domElement );
 	},
 	
+	webglAvailable : function() {
+		// Copied from PIXI, copied from mr doob
+		try {
+			var canvas = document.createElement( 'canvas' );
+			return !! window.WebGLRenderingContext && ( canvas.getContext( 'webgl' ) || canvas.getContext( 'experimental-webgl' ) );
+		} catch( e ) {
+			return false;
+		}
+	}
+	
 };
 
 var gravity;
 
 $(function() {
-	
 	
 	function begin( speed ) {
 		gravity = new Gravity( speed );
@@ -240,9 +264,14 @@ $(function() {
 		begin( 750 );
 		return false;
 	});
-	
-	$('#fast').click(function() {
+
+	$('#high').click(function() {
 		begin( 2000 );
+		return false;
+	});
+	
+	$('#intense').click(function() {
+		begin( 10000 );
 		return false;
 	});
 	

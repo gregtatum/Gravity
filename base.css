@@ -63,6 +63,13 @@ a:hover {
 	.credits {
 		right:0;
 		text-align:center;
+		width:100%;
+	}
+	.credits-hide {
+		display:none;
+	}
+	.credits-capitalize {
+		text-transform: capitalize;
 	}
 }
 

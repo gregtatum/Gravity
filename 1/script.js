@@ -71,6 +71,7 @@ Gravity.prototype = {
 		this.blackHole.anchor.setTo(0.5, 0.5);
 		this.blackHole.x = this.game.width / 2;
 		this.blackHole.y = this.game.height / 2;
+		this.blackHole.blendMode = PIXI.blendModes.MULTIPLY;
 		
 		this.createPhysics();
 		this.createBullets();
@@ -256,12 +257,12 @@ $(function() {
 	}
 	
 	$('#slow').click(function() {
-		begin( 200 );
+		begin( 150 );
 		return false;
 	});
 	
 	$('#medium').click(function() {
-		begin( 750 );
+		begin( 600 );
 		return false;
 	});
 

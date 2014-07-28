@@ -246,8 +246,7 @@ Gravity.prototype = {
 			
 			bullet.body.moveRight(	distance / 2 * Math.cos( theta ) );
 			bullet.body.moveUp(		distance / 2 * Math.sin( theta ) );
-			//bullet.body.moveRight(	this.fireStrength * Math.cos( this.fireTheta ) + Math.random() * 1 );
-			//bullet.body.moveUp(		this.fireStrength * Math.sin( this.fireTheta ) + Math.random() * 1 );
+			
 			this.h += .01;
 			
 			this.fireTheta += Math.PI / 1000;

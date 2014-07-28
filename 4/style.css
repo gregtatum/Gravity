@@ -1,0 +1,35 @@
+.info p {
+	font-size:0.8em;
+}
+h1 {
+	font-size: 4.7em;
+}
+.message {
+	pointer-events: none;
+}
+
+.drawing-target {
+	position:absolute;
+	top:0;
+	left:0;
+	width:100%;
+	height:100%;
+	z-index:2;
+	/*cursor: cell;*/
+}
+.info {
+	z-index:3;
+}
+.message {
+	z-index:1;
+}
+.start-button {
+	display:none;
+	color:#000;
+	background-color:#fff;
+	padding:1em;
+	font-size:1.5em;
+	bottom:1em;
+	left:1em;
+	position:absolute;
+}

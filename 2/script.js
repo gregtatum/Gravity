@@ -152,17 +152,14 @@ Gravity.prototype = {
 			this.nextFire = this.game.time.now + this.fireRate;
 
 			bullet = this.bullets.getFirstDead();
-			bullet.reset(
-				this.game.width / 4 + 100 * Math.random() - 50,
-				3 * this.game.height / 4  + 100 * Math.random() - 50
-			);
-			bullet.px = bullet.x;
-			bullet.py = bullet.y;
 			
 			bullet.reset(
 				this.game.width / 4,
 				3 * this.game.height / 4
 			);
+			bullet.px = bullet.x;
+			bullet.py = bullet.y;
+			
 			bullet.visible = false;
 			bullet.body.moveRight(	this.fireStrength * Math.cos( this.fireTheta ) );
 			bullet.body.moveUp(		this.fireStrength * Math.sin( this.fireTheta ) );

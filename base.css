@@ -74,7 +74,7 @@ a:hover {
 }
 
 .info {
-	padding: 0 2em;
+	padding: 0 4em;
 	text-align:center;
 }
 .arrow-prev:after, .arrow-next:after {
@@ -83,33 +83,37 @@ a:hover {
     height: 0px;
     border-style: solid;
     position: absolute;
-    top: 50%;
+    top: 39%;
     margin-top: -1em;
+    color:rgba(0, 123, 255, 0.67);
 }
 .arrow-prev:after {
-	left: 0;
-    border-width: 0.7em 1em 0.7em 0;
+	left: 0.6em;
+    border-width: 1em 1.2em 1em 0;
     border-color: transparent rgba(0, 123, 255, 0.67) transparent transparent;
 }
 .arrow-next:after {
-    right: 0;
-    border-width: 0.7em 0 0.7em 1em;
+    right: 0.6em;
+    border-width: 1em 0 1em 1.2em;
     border-color: transparent transparent transparent rgba(0, 123, 255, 0.67);
 }
 .arrow-prev, .arrow-next {
     position: absolute;
     top: 0;
     display: block;
-    width: 2em;
+    width: 2.6em;
     height: 100%;
-    overflow: hidden;
-    text-indent: 100px;
+    padding-top: 4.2em;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 0.7em;
+    font-weight: 800;
 }
 .arrow-prev {
-    left: 0;
+    left: 0.8em;
 }
 .arrow-next {
-    right: 0;
+    right: 0.8em;
 }
 .message {
 	position: absolute;
@@ -126,12 +130,15 @@ a:hover {
 }
 @media screen and (max-width: 600px) {
 
+	.arrow-prev, .arrow-next {
+    	padding-top: 4em;
+	}
 	.arrow-prev:after {
-	    right: 0;
+	    right: 0.6em;
 		left: auto;
 	}
 	.arrow-next:after {
-	    left: 0;
+	    left: 0.6em;
 		right: auto;
 	}	
 }

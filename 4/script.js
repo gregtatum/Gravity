@@ -362,7 +362,9 @@ var Mouse = function( scene, target ) {
 
 	$(target).on('mousemove', this.onMouseMove.bind(this) );
 	$(target).on('touchmove', this.onTouchMove.bind(this) );
-	$(target).on('touchend', this.onTouchEnd.bind(this) );
+	
+	$(target).on('mouseleave', this.resetPosition.bind(this) );
+	$(target).on('touchend', this.resetPosition.bind(this) );
 
 };
 

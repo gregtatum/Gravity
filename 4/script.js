@@ -14,18 +14,11 @@ var Gravity = function( max ) {
 	this.$window = $(window);
 	this.width = this.$window.width();
 	this.height = this.$window.height();
-
-	this.div = document.getElementById( 'container' );
-	this.$canvas = null;
-	this.canvas = null;
-	this.$drawingTarget = $('.drawing-target');
-	this.ratio = window.devicePixelRatio >= 1 ? window.devicePixelRatio : 1;
-	this.ratio = 1;
-	this.h = Math.random();
-
+	
+	
 	this.game = new Phaser.Game(
-		this.width * this.ratio,	//Canvas Size
-		this.height * this.ratio,	//Canvas Size
+		this.width,	//Canvas Size
+		this.height,	//Canvas Size
 		renderType,				//Renderer
 		'container',			//DOM ID
 		{
@@ -35,316 +28,73 @@ var Gravity = function( max ) {
 			render: this.render.bind(this)
 		},
 		transparent,	//transparent
-		true			//antialias
+		false			//antialias
 	);
 	
-	this.launchers = [];
-	this.liveBullets = [];
+	this.div = document.getElementById( 'container' );
+	this.$canvas = $('canvas');
+	this.canvas = this.$canvas.get(0);
+	this.ratio = window.devicePixelRatio >= 1 ? window.devicePixelRatio : 1;
 	this.pointer = new Phaser.Point();
+	this.bullets = [];	
+	
+	this.quadTree = new Phaser.QuadTree(0, 0, this.width, this.height, 10, 3);
 
-	this.animatingArrows = false;
-	this.drawingLauncher = false;
-	this.overDragger = false;
-	this.draggedBase = null;
-	this.draggedBaseX = 0;
-	this.draggedBaseY = 0;
-	this.draggedTip = null;
+	
+	this.h = Math.random();
+	this.s = 0.5;
+	this.l = 0.66;
+	
+	this.color = new THREE.Color();
+	
 	this.screenLength = Math.sqrt( this.game.width * this.game.width + this.game.height * this.game.height );
 	
-	this.collisionGroups = null;
+	this.fireDirection = new Phaser.Point();
+	this.fireTheta = Math.PI * 1.7;
+	this.fireStrength = this.screenLength / 17;
 	
+	this.maxFire = max;
+	this.fireRate = 100 / this.maxFire;
+	this.nextFire = 0;
+		
+	this.mouse = null;
+	this.mouseSprite = null;
+	
+	//this.addStats();
 };
 		
 Gravity.prototype = {
-	
 	
 	preload : function() {
 		
 		this.game.load.image('arrow', 'images/arrow.png');
 		this.game.load.image('black-hole', 'images/black-hole.png');
-		this.game.load.image('greg', 'images/greg.png');
 		
 	},
 	
 	create : function() {
-		
-		this.$canvas = $(this.game.canvas);
-		this.$drawingTarget = this.$canvas;
-		
-		var sprite = this.game.add.sprite(100,100);
-		
-		/*
-		sprite.anchor.set(0.5);
-		sprite.texture.frame.width = 100;
-		sprite.texture.frame.height = 100;
-		sprite.texture.updateFrame = true;
-		
-		sprite.scale.x = sprite.scale.y = 1;
-		sprite.inputEnabled = true;
-		sprite.input.useHandCursor = true;
-		sprite.input.enableDrag();
-		*/
-		
-		this.setHandlers();
-		
 		this.game.stage.backgroundColor = '#404040';
-		
+		this.createMouse();
 		this.createPhysics();
 		//this.createPlanets();
 		this.createBullets();
 		
-	},
-	
-	setHandlers : function() {
 		
-		this.$drawingTarget.one('mousedown', this.firstTouch.bind(this) );
-		//this.$drawingTarget.one('touchstart', this.firstTouch.bind(this) );
-		
-		this.$drawingTarget.on('mousedown', this.onMouseDown.bind(this) );
-		//this.$drawingTarget.on('touchstart', this.onTouchStart.bind(this) );
-		
-		$('.start-button').on('click', this.fire.bind(this) );
-		
-		//this.$drawingTarget.on('touchmove', this.onTouchMove );
-		//this.$drawingTarget.on('mouseup', this.onMouseMoveDone );
 		
 	},
 	
-	onMouseDown : function( e ) {
-		e.preventDefault();
-		console.log('down');
-		if( this.drawingLauncher === false && this.overDragger === false ) {
-			console.log('start');
-			
-			this.$drawingTarget.on('mousemove.gravity', this.onMouseMove.bind(this) );
-			this.$drawingTarget.on('mouseout.gravity', this.onMouseEnd.bind(this) );
-			this.$drawingTarget.on('mouseup.gravity', this.onMouseEnd.bind(this) );
-
-			this.startLauncher( e.offsetX * this.ratio, e.offsetY * this.ratio );
-			
-		}
-	},
-	
-	onTouchStart : function( e ) {
-		e.preventDefault();
+	createMouse	: function() {
 		
-		if( this.drawingLauncher === false ) {
-			
-			this.$drawingTarget.on('touchmove', this.onTouchMove.bind(this) );
-			this.$drawingTarget.on('touchend', this.onTouchEnd.bind(this) );
-			
-			this.$drawingTarget.off('touchstart', this.onTouchStart.bind(this) );
-			
-			debugger;
-			this.startLauncher( e.offsetX * this.ratio, e.offsetY * this.ratio );
-			
-		}
-	},
-	
-	onMouseMove : function( e ) {
-		e.preventDefault();
-		console.log('move');
-		this.updateLauncherVector( this.currentLauncher, e.offsetX * this.ratio, e.offsetY * this.ratio );
-	},
-	
-	onTouchMove : function( e ) {
-		e.preventDefault();
-		this.updateLauncherVector(
-			this.currentLauncher,
-			e.originalEvent.touches[0].pageX * this.ratio,
-			e.originalEvent.touches[0].pageY * this.ratio
-		);
-	},
-	
-	onTouchEnd : function( e ) {
-
-		this.$drawingTarget.off('touchmove', this.onTouchMove.bind(this) );
-		this.$drawingTarget.off('touchend', this.onTouchEnd.bind(this) );
+		this.mouse = new Mouse( this, this.game.canvas );
 		
-		this.$drawingTarget.on('touchstart', this.onTouchStart.bind(this) );
+		this.mouseSprite = this.game.add.sprite(100, 100, 'black-hole');
+		this.mouseSprite.anchor.setTo(0.5, 0.5);
 		
-		this.endDrawing();
-	},
-	
-	onMouseEnd : function( e ) {
-		console.log('end');
-		//this.$drawingTarget.on('mousedown', this.onMouseDown.bind(this) );
+		this.mouseSprite.scale.x = this.mouseSprite.scale.y = (this.width + this.height ) / 5000;
 		
-		this.$drawingTarget.off('mousemove.gravity');
-		this.$drawingTarget.off('mouseout.gravity');
-		this.$drawingTarget.off('mouseup.gravity');
+		this.mouseSprite.tint = this.color.setHSL(0.11, 0.5, 0.5).getHex();
+		this.mouseSprite.blendMode = PIXI.blendModes.MULTIPLY;
 		
-		this.endDrawing();
-	},
-	
-	endDrawing : function() {
-		if( this.drawingLauncher ) {
-			this.currentLauncher = null;
-			this.drawingLauncher = false;
-		}
-	},
-	
-	startLauncher : function(x, y) {
-		
-		var launcher, width;
-		
-		launcher = this.game.add.graphics( x, y );
-		
-		this.drawingLauncher = true;
-		this.currentLauncher = launcher
-		this.launchers.push( launcher );
-
-		width = 6 * this.ratio;
-		
-		launcher.hue = this.h + this.launchers.length * 0.05;
-		launcher.color = new THREE.Color().setHSL(
-			launcher.hue,
-			0.5,
-			0.5
-		);
-		
-		launcher.blendMode = PIXI.blendModes.SCREEN;
-		
-		launcher.lineStyle(
-			1 * this.ratio,				//line width
-			launcher.color.getHex(),	//color
-			1							//alpha
-		);
-		launcher.drawCircle( 0, 0, width / 3 );
-		
-		launcher.lineStyle(
-			2 * this.ratio,				//line width
-			launcher.color.getHex(),	//color
-			1							//alpha
-		);
-		launcher.drawCircle( 0, 0, width );
-		
-		//Add the vector graphic
-		launcher.vector = new Phaser.Graphics( this.game, 0, 0 );
-		launcher.vector.color = new THREE.Color().setHSL(
-			launcher.hue,
-			0.6,
-			0.6
-		);
-		launcher.addChild( launcher.vector );
-		
-		
-		//Add the base and tip sprites
-		launcher.base = new Phaser.Sprite( this.game, 0, 0 );
-		launcher.tip = new Phaser.Sprite( this.game, 0, 0 );
-		
-		this.startDraggableSprite( launcher.base, width, launcher );
-		this.startDraggableSprite( launcher.tip, width, launcher);
-		
-		launcher.base.events.onDragStart.add(function() {
-			this.draggedBase = launcher.base;
-			this.draggedBaseX = launcher.x;
-			this.draggedBaseY = launcher.y;
-		}, this);
-		launcher.base.events.onDragStop.add(function() {
-			this.draggedBase.x = 0;
-			this.draggedBase.y = 0;
-			this.draggedBase = null;
-		}, this);
-		
-		launcher.tip.events.onDragStart.add(function() {
-			this.draggedTip = launcher.tip;
-		}, this);
-		launcher.tip.events.onDragStop.add(function() {
-			this.draggedTip = null;
-		}, this);
-	},
-	
-	startDraggableSprite : function(sprite, width, parent) {
-		
-		sprite.anchor.set(0.5);
-		
-		sprite.texture.frame.width = width * 3;
-		sprite.texture.frame.height = width * 3;
-		
-		sprite.texture.updateFrame = true;
-		
-		sprite.inputEnabled = true;
-
-		sprite.input.useHandCursor = true;
-		sprite.input.bringToTop = false;
-		sprite.input.enableDrag();
-		
-		sprite.events.onInputOver.add(function() {
-			this.overDragger = true;
-		}, this);
-		sprite.events.onInputOut.add(function() {
-			this.overDragger = false;
-		}, this);
-				
-		parent.addChild( sprite );
-		
-	},
-	
-	updateLauncherVector : function(launcher, x, y) {
-		var vector, length, relX, relY;
-		
-		if(launcher) {
-			
-			relX = x - launcher.x;
-			relY = y - launcher.y;
-			
-			length = Math.sqrt( relX * relX + relY * relY );
-			
-			vector = launcher.vector
-			vector.clear();
-
-			vector.lineStyle(
-				0.03 * this.ratio * length,			//line width
-				vector.color.getHex(),	//color
-				0.5						//alpha
-			);
-			
-			vector.moveTo(0,0);
-			vector.lineTo(
-				relX,
-				relY
-			);
-			
-			launcher.tip.x = relX;
-			launcher.tip.y = relY;
-			
-		}
-	},
-	
-	firstTouch : function() {
-		$('.message').hide();
-		$('.start-button').css("display", "block");
-	},
-	
-	setNonCollidingPosition : function( planet ) {
-
-		var collides, distanceBetweenPlanets, combinedRadii;
-		
-		collides = false;
-		
-		do {
-			collides = false;
-			
-			planet.x = ( this.game.width  - this.game.width  / 7 ) * Math.random() + (this.game.width  / 14 );
-			planet.y = ( this.game.height - this.game.height / 7 ) * Math.random() + (this.game.height / 14 );
-			
-			this.planets.forEach(function(otherPlanet) {
-				
-				distanceBetweenPlanets = Math.sqrt(
-					Math.pow( planet.x - otherPlanet.x, 2 ) +
-					Math.pow( planet.y - otherPlanet.y, 2 )
-				);
-				
-				combinedRadii = ( planet.radius + otherPlanet.radius );
-				
-				if( distanceBetweenPlanets < combinedRadii ) {
-					collides = true;
-				}
-				
-			}, this);
-								
-		} while ( collides );
 	},
 	
 	createPhysics : function() {
@@ -353,14 +103,6 @@ Gravity.prototype = {
 		this.game.physics.p2.defaultRestitution = 0;
 		this.game.physics.p2.defaultFriction = 0.5;
 		this.game.physics.p2.contactMaterial.relaxation = 2;
-	
-		this.collisionGroups = {
-			walls	: this.game.physics.p2.createCollisionGroup(),
-			bullets	: this.game.physics.p2.createCollisionGroup(),
-			planets	: this.game.physics.p2.createCollisionGroup(),
-			goals	: this.game.physics.p2.createCollisionGroup()
-		};
-		this.game.physics.p2.updateBoundsCollisionGroup();
 		
 	},
 	
@@ -370,7 +112,7 @@ Gravity.prototype = {
 		this.bullets.physicsBodyType = Phaser.Physics.P2JS;
 		this.bullets.enableBodyDebug = true;
 		
-		var i = 100,
+		var i = this.maxFire,
 			bullet;
 		
 		while(i--) {
@@ -382,83 +124,61 @@ Gravity.prototype = {
 			bullet.body.fixedRotation = true;
 			//bullet.checkWorldBounds = true;
 			//bullet.outOfBoundsKill = true;
-			bullet.body.clearCollision(true);
-			bullet.body.setCollisionGroup( this.collisionGroups.bullets );
 			bullet.body.collides([]);
 			bullet.scale.x = bullet.scale.y = 0.5;
 			bullet.blendMode = PIXI.blendModes.ADD;
-		}		
-		
+		}
+				
 	},
 	
 	fire : function() {
 		
-		this.liveBullets.forEach(function( bullet ) {
-			bullet.kill();
-		});
-		
-		this.liveBullets = [];
-		this.animatingArrows = true;
-		
-		this.launchers.forEach( function( launcher ) {
+		var bullet, random, theta;
+
+		if( this.game.time.now > this.nextFire && this.bullets.countDead() > 0) {
 			
-			var bullet, random, theta, distance;
+			this.nextFire = this.game.time.now + this.fireRate;
 
 			bullet = this.bullets.getFirstDead();
-			
-			this.liveBullets.push( bullet );
-			
-			launcher.alpha = 0.8;
-			
+						
 			bullet.reset(
-				launcher.x,
-				launcher.y
+				(this.game.width / 10) + (this.game.width * (8/10)) * Math.random(),
+				(this.game.height / 10) + (this.game.height * (8/10)) * Math.random()
 			);
 			bullet.px = bullet.x;
 			bullet.py = bullet.y;
+			bullet.visible = false;
 			
-			theta = Math.PI - Math.atan2(
-				 launcher.tip.y,
-				 launcher.tip.x 
-			);
+			theta = Math.random() * 2 * Math.PI;
+			bullet.body.moveRight(	this.fireStrength * Math.cos( theta ) );
+			bullet.body.moveUp(		this.fireStrength * Math.sin( theta ) );
+			//bullet.body.moveRight(	this.fireStrength * Math.cos( this.fireTheta ) + Math.random() * 1 );
+			//bullet.body.moveUp(		this.fireStrength * Math.sin( this.fireTheta ) + Math.random() * 1 );
+			this.h += .01;
 			
-			distance = Math.sqrt(
-				Math.pow( launcher.tip.x, 2) +
-				Math.pow( launcher.tip.y, 2)
-			);
-			bullet.body.moveLeft(	(distance / 2) * Math.cos( theta ) );
-			bullet.body.moveDown(		(distance / 2) * Math.sin( theta ) );				
-			
-		}.bind(this) );
+		}
+
+		
 		
 	},
 	
 	update : function() {
 		
-		this.updateDrags();
+		this.fire();
 		
+		this.updateMouseSprite();
 		this.killOutOfBounds();
-		this.attractGravity();
+		this.attractGravityBullets();
+	
+		// debug
+		// this.game.debug.text( liveBullets.length, 10, 30 );
+		// this.game.debug.text( "Dead: " + this.bullets.countDead(), 10, 50 );
+		
 	},
 	
-	updateDrags : function() {
-		var sprite;
-		
-		if( this.draggedBase ) {
-			
-			sprite = this.draggedBase;
-			
-			sprite.parent.x = this.draggedBaseX + sprite.x;
-			sprite.parent.y = this.draggedBaseY + sprite.y;
-			
-		}
-		
-		if( this.draggedTip ) {
-			
-			sprite = this.draggedTip;
-			//console.log(sprite.x, sprite.y);
-			this.updateLauncherVector(sprite.parent, sprite.x + sprite.parent.x, sprite.y + sprite.parent.y);
-		}
+	updateMouseSprite : function() {
+		this.mouseSprite.x = this.mouse.position.x;
+		this.mouseSprite.y = this.mouse.position.y;
 	},
 	
 	killOutOfBounds : function() {
@@ -481,19 +201,33 @@ Gravity.prototype = {
 		}
 	},
 	
-	attractGravity : function() {
+	attractGravityBullets : function() {
 			
-		var i = this.bullets.children.length,
-			denominator,
+		var denominator,
 			//gravity = 30000,
 			gravity = this.width * this.height / 6500000,
 			halfWidth = this.width / 2,
 			halfHeight = this.height / 2,
+			liveBullets = _.filter( this.bullets.children, function( bullet ) {
+				return bullet.alive;
+			}),
 			speed;
 		
-		this.liveBullets.forEach(function( bullet ) {
+		
+		liveBullets.forEach(function( bullet ) {
+			bullet.body.right = bullet.body.x;
+			bullet.body.bottom = bullet.body.y;
+		});
+		
+		if( liveBullets ) {
+			//this.quadTree.populate( liveBullets );
+			//this.game.debug.quadTree( this.quadTree );
+		}
+		
+		
+		liveBullets.forEach(function goThroughEachBullet( bullet ) {
 				
-			this.liveBullets.forEach(function( planet ) {
+			liveBullets.forEach(function applyGravityFromOtherBullets( planet ) {
 				
 				if( planet == bullet ) return;
 				
@@ -522,28 +256,84 @@ Gravity.prototype = {
 				
 			}, this);
 			
-			this.pointer.set(
-				halfWidth - bullet.x,
-				halfHeight - bullet.y
-			);
+			// this.pointer.set(
+			// 	halfWidth - bullet.x,
+			// 	halfHeight - bullet.y
+			// );
+			//
+			// denominator =	Math.pow( this.pointer.x, 2 ) +
+			// 				Math.pow( this.pointer.y, 2 );
+			//
+			// this.pointer.normalize();
+			//
+			// speed = gravity * 10000 / denominator;
+			//
+			// this.pointer.x *= speed;
+			// this.pointer.y *= speed;
+			//
+			//
+			// bullet.body.data.velocity[0] += bullet.body.world.pxmi( this.pointer.x );
+			// bullet.body.data.velocity[1] += bullet.body.world.pxmi( this.pointer.y );
 			
-			denominator =	Math.pow( this.pointer.x, 2 ) +
-							Math.pow( this.pointer.y, 2 );
+			this.attractToMouse( bullet );
 			
-			this.pointer.normalize();
+			bullet.body.data.velocity[0] *= 0.9;
+			bullet.body.data.velocity[1] *= 0.9;
 			
-			speed = gravity * 10000 / denominator;
-			
-			this.pointer.x *= speed;
-			this.pointer.y *= speed;
-			
-			bullet.body.data.velocity[0] += bullet.body.world.pxmi( this.pointer.x );
-			bullet.body.data.velocity[1] += bullet.body.world.pxmi( this.pointer.y );
+			this.updateBulletAppearance( bullet );
 			
 		}.bind(this) );
 	},
 	
+	attractToMouse : function() {
+		
+		var pointer = new Phaser.Point();
+		
+		return function( bullet ) {
+			
+			var denominator, speed,
+				gravity = this.width * this.height / 60;
+			
+			pointer.set(
+				this.mouse.position.x - bullet.x,
+				this.mouse.position.y - bullet.y
+			);
+	
+			denominator =	Math.pow( pointer.x, 2 ) +
+							Math.pow( pointer.y, 2 );
+					
+			pointer.normalize();
+
+			speed = gravity / denominator;
+		
+			pointer.x *= speed;
+			pointer.y *= speed;
+				
+			bullet.body.data.velocity[0] += bullet.body.world.pxmi( pointer.x );
+			bullet.body.data.velocity[1] += bullet.body.world.pxmi( pointer.y );
+			
+		}
+	}(),
+	
+	updateBulletAppearance : function( bullet ) {
+		bullet.lx = bullet.x - bullet.px;
+		bullet.ly = bullet.y - bullet.py;
+		bullet.l = Math.sqrt(bullet.lx * bullet.lx + bullet.ly * bullet.ly);
+		
+		bullet.rotation = Math.atan2( bullet.ly, bullet.lx );
+		
+		bullet.scale.x = bullet.scale.y = bullet.l / 2.5 + 0.1;
+		bullet.alpha = 5 / bullet.l
+		
+		bullet.px = bullet.x;
+		bullet.py = bullet.y;
+	
+		bullet.visible = true;
+		
+	},
+	
 	render : function() {
+		
 	},
 	
 	addStats : function() {
@@ -565,9 +355,90 @@ Gravity.prototype = {
 	
 };
 
+var Mouse = function( scene, target ) {
+
+	this.scene = scene;
+	this.position = new Phaser.Point(-10000, -10000);
+
+	$(target).on('mousemove', this.onMouseMove.bind(this) );
+	$(target).on('touchmove', this.onTouchMove.bind(this) );
+	$(target).on('touchend', this.onTouchEnd.bind(this) );
+
+};
+
+Mouse.prototype = {
+
+	onMouseMove : function(e) {
+
+		if(typeof(e.pageX) == "number") {
+			this.position.x = e.pageX;
+			this.position.y = e.pageY;
+		} else {
+			this.resetPosition();
+		}
+
+	},
+
+	onTouchMove : function( e ) {
+		e.preventDefault();
+		
+		this.position.x = e.originalEvent.touches[0].pageX;
+		this.position.y = e.originalEvent.touches[0].pageY;
+		
+		return false;
+	},
+	
+	resetPosition : function() {
+		this.position.x = -100000;
+		this.position.y = -100000;	
+	},
+	
+	onTouchEnd : function( e ) {
+		this.resetPosition();
+	},
+	
+	copyPosition : function( vector ) {
+		vector.copy( this.position );
+	},
+
+	getPosition : function() {
+		return this.position.clone();
+	}
+
+};
+
+
 var gravity;
 
 $(function() {
-	gravity = new Gravity();
-		
+	
+	function begin( speed ) {
+		gravity = new Gravity( speed );
+		$('.message').hide();
+	}
+	
+	$('#low').click(function() {
+		begin( 75 );
+		return false;
+	});
+	
+	$('#medium').click(function() {
+		begin( 125 );
+		return false;
+	});
+
+	$('#high').click(function() {
+		begin( 250 );
+		return false;
+	});
+	
+	$('#intense').click(function() {
+		begin( 500 );
+		return false;
+	});
+	
+	if(window.location.hash) {
+		$(window.location.hash).trigger('click');
+	}
+	
 });
